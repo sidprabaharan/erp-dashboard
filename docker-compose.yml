@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sql-server:
+    build:
+      context: .
+      dockerfile: docker/db.Dockerfile
+    container_name: erp-sql-server
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Password123
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+    networks:
+      - erp-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Password123" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # .NET API
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: erp-api
+    ports:
+      - "5000:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=ERPDatabase;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;
+    networks:
+      - erp-network
+
+  # React Frontend
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: erp-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - erp-network
+
+networks:
+  erp-network:
+    driver: bridge
+
+volumes:
+  sql-data:
