@@ -36,6 +36,7 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 
 // Register services
+builder.Services.AddScoped<JwtService>();
 // Add more service registrations here
 
 // Add CORS
